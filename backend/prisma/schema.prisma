@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  user_id             Int                  @id @default(autoincrement())
+  email               String?              @db.VarChar(255)
+  full_name           String?              @db.VarChar(255)
+  password            String?              @db.VarChar(255)
+  gender              Boolean?
+  role                String?              @default("client") @db.VarChar(255)
+  desc                String?              @db.VarChar(255)
+  is_delete           Boolean?             @default(false)
+  comment             comment[]
+  user_avatar         user_avatar?
+  user_comment        user_comment[]
+  user_language       user_language[]
+  user_reset_password user_reset_password?
+  user_task           user_task[]
+}
+
+model language {
+  language_id   Int             @id @default(autoincrement())
+  language_name String?         @db.VarChar(255)
+  user_language user_language[]
+}
+
+model user_language {
+  id          Int       @id @default(autoincrement())
+  user_id     Int?
+  language_id Int?
+  users       users?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_language_ibfk_1")
+  language    language? @relation(fields: [language_id], references: [language_id], onDelete: NoAction, onUpdate: NoAction, map: "user_language_ibfk_2")
+
+  @@index([language_id], map: "language_id")
+  @@index([user_id], map: "user_id")
+}
+
+model user_reset_password {
+  user_id   Int       @id
+  is_update Boolean?
+  updateAt  DateTime? @db.Timestamp(0)
+  token     String?   @db.LongText
+  users     users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_reset_password_ibfk_1")
+}
+
+model user_avatar {
+  user_id     Int     @id
+  avatar_link String? @db.LongText
+  users       users   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_avatar_ibfk_1")
+}
+
+model comment {
+  comment_id      Int            @id
+  comment_content String?        @db.Text
+  user_id         Int?
+  createAt        DateTime?      @default(now()) @db.Timestamp(0)
+  updateAt        DateTime?      @default(now()) @db.Timestamp(0)
+  users           users?         @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "comment_ibfk_1")
+  user_comment    user_comment[]
+
+  @@index([user_id], map: "user_id")
+}
+
+model project {
+  project_id   Int       @id
+  project_name String?   @db.VarChar(255)
+  description  String?   @db.Text
+  createAt     DateTime? @default(now()) @db.Timestamp(0)
+  updateAt     DateTime? @default(now()) @db.Timestamp(0)
+  task         task[]
+}
+
+model task {
+  task_id      Int            @id
+  task_name    String?        @db.VarChar(255)
+  description  String?        @db.Text
+  project_id   Int?
+  createAt     DateTime?      @default(now()) @db.Timestamp(0)
+  updateAt     DateTime?      @default(now()) @db.Timestamp(0)
+  project      project?       @relation(fields: [project_id], references: [project_id], onDelete: NoAction, onUpdate: NoAction, map: "task_ibfk_1")
+  user_comment user_comment[]
+  user_task    user_task[]
+
+  @@index([project_id], map: "project_id")
+}
+
+model user_comment {
+  user_id    Int
+  comment_id Int
+  task_id    Int?
+  users      users   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_comment_ibfk_1")
+  comment    comment @relation(fields: [comment_id], references: [comment_id], onDelete: NoAction, onUpdate: NoAction, map: "user_comment_ibfk_2")
+  task       task?   @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction, map: "user_comment_ibfk_3")
+
+  @@id([user_id, comment_id])
+  @@index([comment_id], map: "comment_id")
+  @@index([task_id], map: "task_id")
+}
+
+model user_task {
+  user_id Int
+  task_id Int
+  users   users @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_task_ibfk_1")
+  task    task  @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction, map: "user_task_ibfk_2")
+
+  @@id([user_id, task_id])
+  @@index([task_id], map: "task_id")
+}
